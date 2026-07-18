@@ -150,21 +150,19 @@ Digiham::Phase* FramePhase::process(Csdr::Reader<unsigned char>* data, Csdr::Wri
 
         // interpret the signalling block for call metadata
         if (duid == P25_DUID_LDU1) {
-            LinkControl* lc = LinkControl::parse(lces);
-            if (lc->getFormat() == P25_LCF_GROUP) {
+            LinkControl lc = LinkControl::parse(lces);
+            if (lc.getFormat() == P25_LCF_GROUP) {
                 ((MetaCollector*) meta)->setType("group");
-                ((MetaCollector*) meta)->setDestination(lc->getTalkgroup());
-                ((MetaCollector*) meta)->setSource(lc->getSource());
-            } else if (lc->getFormat() == P25_LCF_UNIT_TO_UNIT) {
+                ((MetaCollector*) meta)->setDestination(lc.getTalkgroup());
+                ((MetaCollector*) meta)->setSource(lc.getSource());
+            } else if (lc.getFormat() == P25_LCF_UNIT_TO_UNIT) {
                 ((MetaCollector*) meta)->setType("direct");
-                ((MetaCollector*) meta)->setDestination(lc->getTalkgroup());
-                ((MetaCollector*) meta)->setSource(lc->getSource());
+                ((MetaCollector*) meta)->setDestination(lc.getTalkgroup());
+                ((MetaCollector*) meta)->setSource(lc.getSource());
             }
-            delete lc;
         } else { // LDU2
-            EncryptionSync* es = EncryptionSync::parse(lces);
-            ((MetaCollector*) meta)->setEncrypted(es->isEncrypted(), es->getAlgorithmId(), es->getKeyId());
-            delete es;
+            EncryptionSync es = EncryptionSync::parse(lces);
+            ((MetaCollector*) meta)->setEncrypted(es.isEncrypted(), es.getAlgorithmId(), es.getKeyId());
         }
 
         // an LDU is exactly P25_LDU_DIBITS raw dibits; advance by the fixed

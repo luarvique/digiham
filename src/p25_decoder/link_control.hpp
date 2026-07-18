@@ -19,7 +19,7 @@ namespace Digiham::P25 {
     //   ... | target address (24) | source (24)
     class LinkControl {
         public:
-            static LinkControl* parse(const uint8_t* bits);
+            static LinkControl parse(const uint8_t* bits);
             uint8_t getFormat() const;
             uint8_t getManufacturerId() const;
             uint32_t getTalkgroup() const;   // group / target address
@@ -38,7 +38,7 @@ namespace Digiham::P25 {
     // Algorithm ID (ALGID) and a 16-bit Key ID (KID).
     class EncryptionSync {
         public:
-            static EncryptionSync* parse(const uint8_t* bits);
+            static EncryptionSync parse(const uint8_t* bits);
             uint8_t getAlgorithmId() const;
             uint16_t getKeyId() const;
             bool isEncrypted() const;
