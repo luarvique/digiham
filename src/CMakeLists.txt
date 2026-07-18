@@ -28,6 +28,7 @@ add_subdirectory(ysf_decoder)
 add_subdirectory(dc_block)
 add_subdirectory(dstar_decoder)
 add_subdirectory(nxdn_decoder)
+add_subdirectory(p25_decoder)
 
 add_library(digiham SHARED
     $<TARGET_OBJECTS:digiham_util>
@@ -41,6 +42,7 @@ add_library(digiham SHARED
     $<TARGET_OBJECTS:digiham_gfsk_demodulator>
     $<TARGET_OBJECTS:digiham_dmr_decoder>
     $<TARGET_OBJECTS:digiham_ysf_decoder>
+    $<TARGET_OBJECTS:digiham_p25_decoder>
     $<TARGET_OBJECTS:digiham_pocsag>
 )
 target_link_libraries(digiham Csdr::csdr++ CodecServer::codecserver ICU::uc)
