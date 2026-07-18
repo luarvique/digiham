@@ -156,7 +156,7 @@ Digiham::Phase* FramePhase::process(Csdr::Reader<unsigned char>* data, Csdr::Wri
                 ((MetaCollector*) meta)->setDestination(lc->getTalkgroup());
                 ((MetaCollector*) meta)->setSource(lc->getSource());
             } else if (lc->getFormat() == P25_LCF_UNIT_TO_UNIT) {
-                ((MetaCollector*) meta)->setType("individual");
+                ((MetaCollector*) meta)->setType("direct");
                 ((MetaCollector*) meta)->setDestination(lc->getTalkgroup());
                 ((MetaCollector*) meta)->setSource(lc->getSource());
             }
