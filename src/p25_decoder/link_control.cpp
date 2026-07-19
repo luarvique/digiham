@@ -12,12 +12,6 @@ using namespace Digiham::P25;
 // received parity to form a 4-bit syndrome, and if the syndrome points at a
 // single erroneous data bit we flip it.
 
-static inline uint32_t bitsToUint(const uint8_t* bits, int count) {
-    uint32_t v = 0;
-    for (int i = 0; i < count; i++) v = (v << 1) | (bits[i] & 1);
-    return v;
-}
-
 // decode one 10-bit Hamming(10,6,3) codeword into a 6-bit hexbit
 //
 // A valid distance-3 (10,6) code: each data bit is assigned a distinct nonzero
@@ -63,15 +57,6 @@ static uint8_t hamming_10_6_3_decode(const uint8_t* cw) {
 static void recoverHexbits(const uint8_t* bits, uint8_t* out, int dataHexbits) {
     for (int i = 0; i < dataHexbits; i++) {
         out[i] = hamming_10_6_3_decode(bits + i * 10);
-    }
-}
-
-// pack an array of 6-bit hexbits into a big-endian bit array
-static void hexbitsToBits(const uint8_t* hexbits, int count, uint8_t* bits) {
-    for (int i = 0; i < count; i++) {
-        for (int b = 0; b < 6; b++) {
-            bits[i * 6 + b] = (hexbits[i] >> (5 - b)) & 1;
-        }
     }
 }
 

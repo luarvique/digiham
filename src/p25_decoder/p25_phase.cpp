@@ -2,6 +2,7 @@
 #include "p25_meta.hpp"
 #include "nid.hpp"
 #include "link_control.hpp"
+#include "header.hpp"
 #include "types.hpp"
 
 #include <cstring>
@@ -108,6 +109,29 @@ Digiham::Phase* FramePhase::process(Csdr::Reader<unsigned char>* data, Csdr::Wri
 
     ((MetaCollector*) meta)->setNac(nid.getNac());
 
+    if (duid == P25_DUID_HDU) {
+        // read the whole HDU body (648 logical bits = 324 dibits)
+        uint8_t body[648];
+        stream.readBits(body, 324);
+
+        // 36 hexbits, each an 18-bit Golay(18,6,8) codeword, forming an
+        // RS(36,20,17) codeword (20 data hexbits + 16 RS parity hexbits,
+        // the RS parity is ignored just like the LC/ES parity)
+        Header header = Header::parse(body);
+        ((MetaCollector*) meta)->setEncrypted(header.isEncrypted(), header.getAlgorithmId(), header.getKeyId());
+        ((MetaCollector*) meta)->setDestination(header.getTalkgroup());
+        ((MetaCollector*) meta)->setManufacturerId(header.getManufacturerId());
+
+        // unlike an LDU, the HDU's on-air length doesn't land on a status
+        // symbol boundary, so there is no fixed dibit count to pad to (see
+        // the P25_LDU_DIBITS comment below); advance by however many raw
+        // dibits the stream actually consumed. Stay in FramePhase, since the
+        // LDU1 that follows is expected right here and doesn't need a fresh
+        // sync search.
+        data->advance(stream.rawConsumed());
+        return this;
+    }
+
     if (duid == P25_DUID_LDU1 || duid == P25_DUID_LDU2) {
         // read the whole LDU body (1568 logical bits = 784 dibits)
         uint8_t body[1568];
@@ -177,7 +201,7 @@ Digiham::Phase* FramePhase::process(Csdr::Reader<unsigned char>* data, Csdr::Wri
         return new SyncPhase();
     }
 
-    // HDU / TSDU / PDU: we've captured the NAC; skip past this unit's header and
+    // TSDU / PDU: we've captured the NAC; skip past this unit's header and
     // resync (each subsequent data unit carries its own frame sync anyway).
     data->advance(stream.rawConsumed());
     return new SyncPhase();

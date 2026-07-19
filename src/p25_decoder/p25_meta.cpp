@@ -28,6 +28,10 @@ std::map<std::string, std::string> MetaCollector::collect() {
         metadata["destination"] = std::to_string(destination);
     }
 
+    if (mfid != 0) {
+        metadata["mfid"] = std::to_string(mfid);
+    }
+
     if (encrypted) {
         metadata["encryption"] = "encrypted";
         metadata["algid"] = std::to_string(algid);
@@ -72,6 +76,12 @@ void MetaCollector::setDestination(uint32_t destination) {
     sendMetaData();
 }
 
+void MetaCollector::setManufacturerId(uint8_t mfid) {
+    if (this->mfid == mfid) return;
+    this->mfid = mfid;
+    sendMetaData();
+}
+
 void MetaCollector::setEncrypted(bool encrypted, uint8_t algid, uint16_t kid) {
     if (this->encrypted == encrypted && this->algid == algid && this->kid == kid) return;
     this->encrypted = encrypted;
@@ -86,6 +96,7 @@ void MetaCollector::reset() {
     setType("");
     setSource(0);
     setDestination(0);
+    setManufacturerId(0);
     setEncrypted(false, 0, 0);
     // deliberately keep NAC: it identifies the system and rarely changes
     release();

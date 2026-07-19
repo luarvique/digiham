@@ -13,6 +13,7 @@ namespace Digiham::P25 {
             void setNac(uint16_t nac);
             void setSource(uint32_t source);
             void setDestination(uint32_t destination);
+            void setManufacturerId(uint8_t mfid);
             void setEncrypted(bool encrypted, uint8_t algid, uint16_t kid);
             void reset();
         protected:
@@ -28,6 +29,7 @@ namespace Digiham::P25 {
             bool encrypted = false;
             uint8_t algid = 0;
             uint16_t kid = 0;
+            uint8_t mfid = 0;
     };
 
 }

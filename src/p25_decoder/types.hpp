@@ -18,3 +18,22 @@
 
 // Encryption algorithm IDs (ALGID)
 #define P25_ALGID_UNENCRYPTED 0x80  // clear / no encryption
+
+namespace Digiham::P25 {
+
+    // collect given number of bits into a big-endian word
+    static uint32_t bitsToUint(const uint8_t* bits, int count) {
+        uint32_t v = 0;
+        for (int i = 0; i < count; i++) v = (v << 1) | (bits[i] & 1);
+        return v;
+    }
+
+    // pack an array of 6-bit hexbits into a big-endian bit array
+    static void hexbitsToBits(const uint8_t* hexbits, int count, uint8_t* bits) {
+        for (int i = 0; i < count; i++) {
+            for (int b = 0; b < 6; b++) {
+                bits[i * 6 + b] = (hexbits[i] >> (5 - b)) & 1;
+            }
+        }
+    }
+}
