@@ -10,6 +10,7 @@
 #define P25_DUID_LDU2   0xA   // Logical Link Data Unit 2 (voice + Encryption Sync)
 #define P25_DUID_PDU    0xC   // Packet Data Unit
 #define P25_DUID_TDULC  0xF   // Terminator Data Unit with Link Control
+#define P25_DUID_BAD    0xFF  // Illegal or unknown data unit
 
 // Link Control Format (LCF) values we care about
 #define P25_LCF_GROUP        0x00   // Group Voice Channel User

@@ -94,8 +94,9 @@ Digiham::Phase* FramePhase::process(Csdr::Reader<unsigned char>* data, Csdr::Wri
     uint8_t nid_bits[64];
     stream.readBits(nid_bits, 32);
 
-    Nid* nid = Nid::parse(nid_bits);
-    if (nid == nullptr) {
+    Nid nid = Nid::parse(nid_bits);
+    uint8_t duid = nid.getDataUnitId();
+    if (duid == P25_DUID_BAD) {
         // NID didn't decode to a known DUID; drop this sync and resync
         data->advance(stream.rawConsumed());
         if (--syncCount < 0) {
@@ -105,9 +106,7 @@ Digiham::Phase* FramePhase::process(Csdr::Reader<unsigned char>* data, Csdr::Wri
         return this;
     }
 
-    ((MetaCollector*) meta)->setNac(nid->getNac());
-    uint8_t duid = nid->getDataUnitId();
-    delete nid;
+    ((MetaCollector*) meta)->setNac(nid.getNac());
 
     if (duid == P25_DUID_LDU1 || duid == P25_DUID_LDU2) {
         // read the whole LDU body (1568 logical bits = 784 dibits)

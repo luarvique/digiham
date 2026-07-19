@@ -14,7 +14,7 @@ namespace Digiham::P25 {
     // the DUID is not one of the values defined by the standard.
     class Nid {
         public:
-            static Nid* parse(const uint8_t* bits);
+            static Nid parse(const uint8_t* bits);
             uint16_t getNac() const;
             uint8_t getDataUnitId() const;
         private:

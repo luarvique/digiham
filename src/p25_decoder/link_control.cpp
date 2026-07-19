@@ -12,8 +12,8 @@ using namespace Digiham::P25;
 // received parity to form a 4-bit syndrome, and if the syndrome points at a
 // single erroneous data bit we flip it.
 
-static inline uint8_t bitsToUint(const uint8_t* bits, int count) {
-    uint8_t v = 0;
+static inline uint32_t bitsToUint(const uint8_t* bits, int count) {
+    uint32_t v = 0;
     for (int i = 0; i < count; i++) v = (v << 1) | (bits[i] & 1);
     return v;
 }
@@ -87,22 +87,24 @@ LinkControl LinkControl::parse(const uint8_t* bits) {
     uint8_t lc[72];
     hexbitsToBits(hexbits, 12, lc);
 
-    uint8_t lcf = bitsToUint(lc, 8);
-    uint8_t mfid = bitsToUint(lc + 8, 8);
+    uint32_t lcf  = bitsToUint(lc, 8);
+    uint32_t mfid = bitsToUint(lc + 8, 8);
+    uint32_t dst  = 0;
+    uint32_t src  = 0;
 
-    uint32_t dst = 0;
-    uint32_t src = 0;
-
-    if (lcf == P25_LCF_GROUP) {
+    switch (lcf) {
+    case P25_LCF_GROUP:
         // service options (8) + reserved (8) at lc[16..31]
-        for (int i = 32; i < 48; i++) dst = (dst << 1) | (lc[i] & 1);
-        for (int i = 48; i < 72; i++) src = (src << 1) | (lc[i] & 1);
-    } else if (lcf == P25_LCF_UNIT_TO_UNIT) {
-        for (int i = 24; i < 48; i++) dst = (dst << 1) | (lc[i] & 1);
-        for (int i = 48; i < 72; i++) src = (src << 1) | (lc[i] & 1);
-    } else {
+        dst = bitsToUint(lc + 32, 16);
+        src = bitsToUint(lc + 48, 24);
+        break;
+    case P25_LCF_UNIT_TO_UNIT:
+        dst = bitsToUint(lc + 24, 24);
+        src = bitsToUint(lc + 48, 24);
+        break;
+    default:
         // other LC formats (e.g. system/status broadcasts) are not interpreted
-        return LinkControl(lcf, mfid, 0, 0);
+        break;
     }
 
     return LinkControl(lcf, mfid, dst, src);
@@ -125,9 +127,8 @@ EncryptionSync EncryptionSync::parse(const uint8_t* bits) {
     hexbitsToBits(hexbits, 16, es);
 
     // 72-bit Message Indicator, then ALGID (8) then KID (16)
-    uint8_t algid = bitsToUint(es + 72, 8);
-    uint16_t kid = 0;
-    for (int i = 80; i < 96; i++) kid = (kid << 1) | (es[i] & 1);
+    uint32_t algid = bitsToUint(es + 72, 8);
+    uint32_t kid   = bitsToUint(es + 80, 16);
 
     return EncryptionSync(algid, kid);
 }

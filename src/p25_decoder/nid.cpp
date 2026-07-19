@@ -20,7 +20,7 @@ static bool isKnownDuid(uint8_t duid) {
     }
 }
 
-Nid* Nid::parse(const uint8_t* bits) {
+Nid Nid::parse(const uint8_t* bits) {
     // NAC is the first 12 bits, DUID the following 4 bits. The remaining 48 bits
     // are BCH(63,16,23) parity plus a trailing overall-parity bit.
     //
@@ -39,11 +39,7 @@ Nid* Nid::parse(const uint8_t* bits) {
         duid = (duid << 1) | (bits[i] & 1);
     }
 
-    if (!isKnownDuid(duid)) {
-        return nullptr;
-    }
-
-    return new Nid(nac, duid);
+    return Nid(nac, isKnownDuid(duid)? duid : P25_DUID_BAD);
 }
 
 uint16_t Nid::getNac() const {
