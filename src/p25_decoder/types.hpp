@@ -36,4 +36,13 @@ namespace Digiham::P25 {
             }
         }
     }
+
+    // pack given number of bits (one bit per byte) into big-endian bytes
+    static void packBits(const uint8_t* bits, int count, unsigned char* out) {
+        count &= ~7;
+        for (int i = 0; i < count; i += 8) {
+            out[i >> 3] = bitsToUint(bits + i, 8);
+        }
+    }
+
 }

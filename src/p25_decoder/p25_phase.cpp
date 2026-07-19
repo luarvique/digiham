@@ -53,14 +53,6 @@ namespace {
             const unsigned char* base;
             int rawPos = 0;
     };
-
-    // pack `count` bits (one bit per byte) into `count/8` output bytes, MSB first
-    void packBits(const uint8_t* bits, int count, unsigned char* out) {
-        std::memset(out, 0, count / 8);
-        for (int i = 0; i < count; i++) {
-            out[i / 8] |= (bits[i] & 1) << (7 - (i % 8));
-        }
-    }
 }
 
 Digiham::Phase* SyncPhase::process(Csdr::Reader<unsigned char>* data, Csdr::Writer<unsigned char>* output) {
