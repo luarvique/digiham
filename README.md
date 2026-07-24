@@ -5,6 +5,10 @@ operators. The main focus is on digital voice modes.
 
 Right now this project enables you to decode DMR and YSF, future plans include NXDN and D-Star.
 
+The DMR decoder supports repeater (BS / MS sourced) transmissions as well as direct mode (DMO) simplex
+transmissions as used by Tier I / Tier II radios talking directly to each other. Direct mode transmissions are
+indicated with `dmo:1` in the metadata output, with the timeslot derived from the DMO sync pattern.
+
 The main use of this project is to run in the backend of [OpenWebRX](https://github.com/jketterl/openwebrx), where it
 decodes the available information, which is then displayed on the receiver's website.
 
