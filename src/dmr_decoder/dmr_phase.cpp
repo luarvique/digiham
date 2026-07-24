@@ -15,7 +15,10 @@ extern "C" {
 
 using namespace Digiham::Dmr;
 
-int Phase::getSyncType(unsigned char *potentialSync) {
+int Phase::getSyncType(unsigned char *potentialSync, int* dmoSlot) {
+    // no direct mode (DMO) slot yet
+    if (dmoSlot != nullptr) *dmoSlot = -1;
+
     if (hamming_distance((uint8_t*) potentialSync, (uint8_t*) dmr_bs_data_sync, SYNC_SIZE) <= 3) {
         return SYNCTYPE_DATA;
     }
@@ -26,6 +29,24 @@ int Phase::getSyncType(unsigned char *potentialSync) {
         return SYNCTYPE_DATA;
     }
     if (hamming_distance((uint8_t*) potentialSync, (uint8_t*) dmr_ms_voice_sync, SYNC_SIZE) <= 3) {
+        return SYNCTYPE_VOICE;
+    }
+
+    // direct mode (DMO) sync patterns; these encode the timeslot in the sync pattern since there is no CACH
+    if (hamming_distance((uint8_t*) potentialSync, (uint8_t*) dmr_dmo_ts1_data_sync, SYNC_SIZE) <= 3) {
+        if (dmoSlot != nullptr) *dmoSlot = 0;
+        return SYNCTYPE_DATA;
+    }
+    if (hamming_distance((uint8_t*) potentialSync, (uint8_t*) dmr_dmo_ts1_voice_sync, SYNC_SIZE) <= 3) {
+        if (dmoSlot != nullptr) *dmoSlot = 0;
+        return SYNCTYPE_VOICE;
+    }
+    if (hamming_distance((uint8_t*) potentialSync, (uint8_t*) dmr_dmo_ts2_data_sync, SYNC_SIZE) <= 3) {
+        if (dmoSlot != nullptr) *dmoSlot = 1;
+        return SYNCTYPE_DATA;
+    }
+    if (hamming_distance((uint8_t*) potentialSync, (uint8_t*) dmr_dmo_ts2_voice_sync, SYNC_SIZE) <= 3) {
+        if (dmoSlot != nullptr) *dmoSlot = 1;
         return SYNCTYPE_VOICE;
     }
 
@@ -67,7 +88,9 @@ Digiham::Phase *FramePhase::process(Csdr::Reader<unsigned char> *data, Csdr::Wri
     // slots should always be alternating, but may be overridden by 100% correct tact
     // this is our assumption of what the next slot should be, based on the last slot:
     unsigned char next = slot ^ 1;
-    if (cach->hasTact()) {
+    // direct mode transmissions don't have a CACH; anything that decodes as a TACT there is noise and must not
+    // override the slot information derived from the DMO sync patterns
+    if (!directMode && cach->hasTact()) {
         // is our assumption correct?
         if (cach->getTact()->getSlot() != next) {
             // no. act according to the level of confidence aka. slotStability
@@ -98,9 +121,25 @@ Digiham::Phase *FramePhase::process(Csdr::Reader<unsigned char> *data, Csdr::Wri
 
     delete cach;
 
+    // check for sync early: direct mode (DMO) transmissions don't have a CACH, so the timeslot cannot be derived
+    // from the TACT. instead, the DMO sync patterns themselves encode the timeslot.
+    int dmoSlot = -1;
+    int syncType = getSyncType(data->getReadPointer() + syncOffset, &dmoSlot);
+    if (dmoSlot >= 0) {
+        ((MetaCollector*) meta)->setDirectMode(true);
+        directMode = true;
+        if (slot != dmoSlot) {
+            // the sync pattern is authoritative; whatever the (noise-decoded) CACH said is wrong
+            slot = dmoSlot;
+            slotStability = 0;
+        } else {
+            if (++slotStability > 100) slotStability = 100;
+        }
+    }
+
     if (slot != -1) {
-        int syncType = getSyncType(data->getReadPointer() + syncOffset);
         if (syncType > 0) {
+            idleFrames = 0;
             // increase sync count, cap at 5
             if (++syncCount > 5) syncCount = 5;
             if (++slotSyncCount[slot] > 5) slotSyncCount[slot] = 5;
@@ -134,6 +173,7 @@ Digiham::Phase *FramePhase::process(Csdr::Reader<unsigned char> *data, Csdr::Wri
             Emb* emb = Emb::parse(emb_data);
             if (emb != nullptr) {
                 // if the EMB decoded correctly, that counts towards the sync :)
+                idleFrames = 0;
                 if (++syncCount > 5) syncCount = 5;
                 if (++slotSyncCount[slot] > 5) slotSyncCount[slot] = 5;
 
@@ -185,7 +225,10 @@ Digiham::Phase *FramePhase::process(Csdr::Reader<unsigned char> *data, Csdr::Wri
                     return new SyncPhase();
                 }
             }
-        } else {
+        } else if (!directMode || syncTypes[slot] != -1 || slotSyncCount[slot] > 0) {
+            // in direct mode, typically only one timeslot carries a transmission while the other one is empty air;
+            // an idle slot that never had a sync must therefore not count against the sync counters (see condition
+            // above). end of transmission is handled by the idleFrames counter instead.
             // even if we didn't find the sync, we should still reset the superframe counter
             superframeCounter[slot] = 0;
             embCollectors[slot]->reset();
@@ -295,6 +338,15 @@ Digiham::Phase *FramePhase::process(Csdr::Reader<unsigned char> *data, Csdr::Wri
                 ((MetaCollector*) meta)->withSlot(slot, [] (Slot* s) { s->reset(); });
             }
         }
+    }
+
+    // in direct mode, the sync loss detection above is (partially) disabled for the idle timeslot, so we need a
+    // separate way of detecting the end of a transmission. 20 frames correspond to 600ms without any sync or
+    // embedded signalling.
+    if (directMode && ++idleFrames > 20) {
+        ((MetaCollector*) meta)->reset();
+        data->advance(FRAME_SIZE);
+        return new SyncPhase();
     }
 
     data->advance(FRAME_SIZE);

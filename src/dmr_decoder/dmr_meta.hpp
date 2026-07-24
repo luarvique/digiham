@@ -45,10 +45,12 @@ namespace Digiham::Dmr {
             void withSlot(int slot, const std::function<void(Slot*)>& callback);
             void sendMetaData() override;
             void sendMetaDataForSlot(int slot);
+            void setDirectMode(bool directMode);
             void reset();
         protected:
             std::string getProtocol() override;
             Slot* slots[2];
+            bool directMode = false;
     };
 
 }
