@@ -37,6 +37,7 @@ namespace Digiham::P25 {
             Digiham::Phase* process(Csdr::Reader<unsigned char>* data, Csdr::Writer<unsigned char>* output) override;
         private:
             int syncCount = 0;
+            bool encrypted = false;
     };
 
 }

@@ -110,7 +110,8 @@ Digiham::Phase* FramePhase::process(Csdr::Reader<unsigned char>* data, Csdr::Wri
         // RS(36,20,17) codeword (20 data hexbits + 16 RS parity hexbits,
         // the RS parity is ignored just like the LC/ES parity)
         Header header = Header::parse(body);
-        ((MetaCollector*) meta)->setEncrypted(header.isEncrypted(), header.getAlgorithmId(), header.getKeyId());
+        encrypted = header.isEncrypted();
+        ((MetaCollector*) meta)->setEncrypted(encrypted, header.getAlgorithmId(), header.getKeyId());
         ((MetaCollector*) meta)->setDestination(header.getTalkgroup());
         ((MetaCollector*) meta)->setManufacturerId(header.getManufacturerId());
 
@@ -153,16 +154,6 @@ Digiham::Phase* FramePhase::process(Csdr::Reader<unsigned char>* data, Csdr::Wri
             }
         }
 
-        // emit the voice code words (only when we trust the sync)
-        if (syncCount >= 1) {
-            ((MetaCollector*) meta)->setSync("voice");
-            for (int vf = 0; vf < 9; vf++) {
-                unsigned char* out = output->getWritePointer();
-                packBits(voice[vf], 144, out);
-                output->advance(18);
-            }
-        }
-
         // interpret the signalling block for call metadata
         if (duid == P25_DUID_LDU1) {
             LinkControl lc = LinkControl::parse(lces);
@@ -177,7 +168,19 @@ Digiham::Phase* FramePhase::process(Csdr::Reader<unsigned char>* data, Csdr::Wri
             }
         } else { // LDU2
             EncryptionSync es = EncryptionSync::parse(lces);
-            ((MetaCollector*) meta)->setEncrypted(es.isEncrypted(), es.getAlgorithmId(), es.getKeyId());
+            encrypted = es.isEncrypted();
+            ((MetaCollector*) meta)->setEncrypted(encrypted, es.getAlgorithmId(), es.getKeyId());
+        }
+
+        // emit voice code words when we trust the sync
+        // and the voice is not encrypted
+        if (syncCount >= 1 && !encrypted) {
+            ((MetaCollector*) meta)->setSync("voice");
+            for (int vf = 0; vf < 9; vf++) {
+                unsigned char* out = output->getWritePointer();
+                packBits(voice[vf], 144, out);
+                output->advance(18);
+            }
         }
 
         // an LDU is exactly P25_LDU_DIBITS raw dibits; advance by the fixed
