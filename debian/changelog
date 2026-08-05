@@ -1,3 +1,9 @@
+digiham (0.6.11) bullseye jammy; urgency=low
+
+  * Muted encrypted P25 audio.
+
+ -- Marat Fayzullin <luarvique@gmail.com>  Wed, 5 Aug 2026 01:50:00 +0000
+
 digiham (0.6.10) bullseye jammy; urgency=low
 
   * Added initial P25 support.
