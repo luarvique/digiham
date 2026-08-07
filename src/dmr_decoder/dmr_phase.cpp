@@ -1,5 +1,6 @@
 #include <cstring>
 #include "dmr_phase.hpp"
+#include "dmo_phase.hpp"
 #include "dmr_meta.hpp"
 #include "emb.hpp"
 #include "cach.hpp"
@@ -37,8 +38,17 @@ int SyncPhase::getRequiredData() {
 };
 
 Digiham::Phase* SyncPhase::process(Csdr::Reader<unsigned char>* data, Csdr::Writer<unsigned char>* output) {
-    int syncType = getSyncType(data->getReadPointer() + syncOffset);
-    if (syncType > 0) return new FramePhase();
+    unsigned char* sync = data->getReadPointer() + syncOffset;
+
+    // MS (mobile station) syncs indicate a direct mode / simplex (DMO) transmission, which is decoded by the
+    // dedicated DMO path (pinned slot, no CACH). BS (base station) syncs indicate a repeater transmission, decoded
+    // by the normal FramePhase. Dispatching here keeps the two decoders cleanly separated.
+    if (hamming_distance((uint8_t*) sync, (uint8_t*) dmr_ms_data_sync, SYNC_SIZE) <= 3
+        || hamming_distance((uint8_t*) sync, (uint8_t*) dmr_ms_voice_sync, SYNC_SIZE) <= 3) {
+        return new DmoFramePhase();
+    }
+
+    if (getSyncType(sync) > 0) return new FramePhase();
 
     // as long as we don't find any sync, move ahead, symbol by symbol
     data->advance(1);

@@ -163,6 +163,9 @@ void MetaCollector::sendMetaDataForSlot(int slotIndex) {
 
     auto metadata = Digiham::MetaCollector::collect();
     metadata["slot"] = std::to_string(slotIndex);
+    if (directMode) {
+        metadata["dmo"] = "1";
+    }
 
     auto slotMetadata = slot->collect();
     metadata.insert(slotMetadata.begin(), slotMetadata.end());
@@ -171,7 +174,12 @@ void MetaCollector::sendMetaDataForSlot(int slotIndex) {
     slot->setClean();
 }
 
+void MetaCollector::setDirectMode(bool directMode) {
+    this->directMode = directMode;
+}
+
 void MetaCollector::reset() {
+    directMode = false;
     for (int i = 0; i < 2; i++) {
         slots[i]->reset();
     }

@@ -45,10 +45,14 @@ namespace Digiham::Dmr {
             void withSlot(int slot, const std::function<void(Slot*)>& callback);
             void sendMetaData() override;
             void sendMetaDataForSlot(int slot);
+            // Marks the current transmission as direct mode (DMO / simplex). When set, emitted metadata carries a
+            // dmo flag so the UI can distinguish direct mode from repeater traffic. Cleared on reset().
+            void setDirectMode(bool directMode);
             void reset();
         protected:
             std::string getProtocol() override;
             Slot* slots[2];
+            bool directMode = false;
     };
 
 }
