@@ -1,5 +1,6 @@
 #include "dmr_decoder.hpp"
 #include "dmr_phase.hpp"
+#include "dmo_phase.hpp"
 #include "dmr_meta.hpp"
 
 using namespace Digiham::Dmr;
@@ -12,6 +13,11 @@ void Decoder::setSlotFilter(unsigned char filter) {
     if (framePhase != nullptr) {
         framePhase->setSlotFilter(slotFilter);
     }
+    // DMO phases don't derive from FramePhase, so they need to be handled separately.
+    auto dmoPhase = dynamic_cast<DmoPhase*>(currentPhase);
+    if (dmoPhase != nullptr) {
+        dmoPhase->setSlotFilter(slotFilter);
+    }
 }
 
 void Decoder::setPhase(Digiham::Phase *phase) {
@@ -19,5 +25,10 @@ void Decoder::setPhase(Digiham::Phase *phase) {
     auto framePhase = dynamic_cast<FramePhase*>(currentPhase);
     if (framePhase != nullptr) {
         framePhase->setSlotFilter(slotFilter);
+    }
+    // DMO phases don't derive from FramePhase, so they need to be handled separately.
+    auto dmoPhase = dynamic_cast<DmoPhase*>(currentPhase);
+    if (dmoPhase != nullptr) {
+        dmoPhase->setSlotFilter(slotFilter);
     }
 }

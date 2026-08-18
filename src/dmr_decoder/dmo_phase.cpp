@@ -32,7 +32,13 @@ int DmoSyncPhase::getRequiredData() {
 
 Digiham::Phase* DmoSyncPhase::process(Csdr::Reader<unsigned char>* data, Csdr::Writer<unsigned char>* output) {
     if (getMsSyncType(data->getReadPointer() + syncOffset) > 0) {
-        return new DmoFramePhase();
+        // Sync found at syncOffset within the current window. Hand over to DmoFramePhase WITHOUT advancing, so
+        // that it processes this very frame: DmoFramePhase reads its payload/sync relative to the current reader
+        // position (sync at syncOffset) and only advances FRAME_SIZE at the end of its own process(). This
+        // mirrors the repeater SyncPhase -> FramePhase handoff, which likewise transitions without advancing.
+        auto next = new DmoFramePhase();
+        next->setSlotFilter(slotFilter);
+        return next;
     }
     // no sync yet: advance one symbol and keep searching
     data->advance(1);
@@ -53,7 +59,7 @@ int DmoFramePhase::getRequiredData() {
     return FRAME_SIZE;
 }
 
-void DmoFramePhase::setSlotFilter(unsigned char filter) {
+void DmoPhase::setSlotFilter(unsigned char filter) {
     slotFilter = filter;
 }
 
@@ -133,7 +139,9 @@ Digiham::Phase* DmoFramePhase::process(Csdr::Reader<unsigned char>* data, Csdr::
             }
             if (--syncCount < 0) {
                 metaCollector->reset();
-                return new DmoSyncPhase();
+                auto next = new DmoSyncPhase();
+                next->setSlotFilter(slotFilter);
+                return next;
             }
         }
     } else {
@@ -148,7 +156,9 @@ Digiham::Phase* DmoFramePhase::process(Csdr::Reader<unsigned char>* data, Csdr::
         }
         if (--syncCount < 0) {
             metaCollector->reset();
-            return new DmoSyncPhase();
+            auto next = new DmoSyncPhase();
+            next->setSlotFilter(slotFilter);
+            return next;
         }
     }
 

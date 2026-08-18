@@ -33,11 +33,17 @@ namespace Digiham::Dmr {
     // Shared DMO constants and MS sync matching. DmoPhase inherits the sync patterns and syncOffset from the
     // repeater Phase (they are identical); it only adds direct-mode-specific sync classification.
     class DmoPhase: public Phase {
+        public:
+            // Slot filter is carried on the base so the Decoder can propagate it to whichever DMO phase is
+            // current (search or frame). DMO uses a single pinned slot (0), so only bit 1 is meaningful.
+            void setSlotFilter(unsigned char filter);
         protected:
             // Returns SYNCTYPE_VOICE / SYNCTYPE_DATA if the window matches an MS (direct mode) sync, or -1
             // otherwise. Unlike the repeater getSyncType, this only accepts the MS syncs: a DMO decoder must not
             // lock onto a BS sync (that would be a repeater signal, handled by the other path).
             int getMsSyncType(unsigned char* potentialSync);
+
+            unsigned char slotFilter = 3;
     };
 
     // Searches the incoming symbol stream for an MS sync. Once found, hands over to DmoFramePhase. This is the
@@ -57,7 +63,6 @@ namespace Digiham::Dmr {
             ~DmoFramePhase() override;
             int getRequiredData() override;
             Digiham::Phase* process(Csdr::Reader<unsigned char>* data, Csdr::Writer<unsigned char>* output) override;
-            void setSlotFilter(unsigned char filter);
         private:
             void handleLc(Lc* lc);
 
@@ -71,7 +76,6 @@ namespace Digiham::Dmr {
             EmbeddedCollector* embCollector;
             TalkerAliasCollector* talkerAliasCollector;
             bool active = false;
-            unsigned char slotFilter = 3;
     };
 
 }

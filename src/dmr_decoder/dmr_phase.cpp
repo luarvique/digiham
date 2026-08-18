@@ -45,7 +45,11 @@ Digiham::Phase* SyncPhase::process(Csdr::Reader<unsigned char>* data, Csdr::Writ
     // by the normal FramePhase. Dispatching here keeps the two decoders cleanly separated.
     if (hamming_distance((uint8_t*) sync, (uint8_t*) dmr_ms_data_sync, SYNC_SIZE) <= 3
         || hamming_distance((uint8_t*) sync, (uint8_t*) dmr_ms_voice_sync, SYNC_SIZE) <= 3) {
-        return new DmoFramePhase();
+        // Hand over to the DMO search phase rather than straight to DmoFramePhase. SyncPhase locates the sync by
+        // scanning one symbol at a time, so the reader is not frame-aligned at this point; DmoFramePhase assumes
+        // alignment. DmoSyncPhase re-detects the MS sync and consumes the leading frame to establish alignment
+        // before entering DmoFramePhase.
+        return new DmoSyncPhase();
     }
 
     if (getSyncType(sync) > 0) return new FramePhase();
