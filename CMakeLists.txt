@@ -18,6 +18,9 @@ find_package(Csdr 0.18 REQUIRED)
 
 find_package(ICU 57.0 COMPONENTS uc REQUIRED)
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(FFTW3F REQUIRED fftw3f)
+
 SET(CMAKE_CXX_FLAGS_RELEASE "-O3")
 SET(CMAKE_C_FLAGS_RELEASE "-O3")
 SET(CMAKE_CXX_FLAGS_DEBUG "-g -O3")

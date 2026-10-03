@@ -29,6 +29,7 @@ add_subdirectory(dc_block)
 add_subdirectory(dstar_decoder)
 add_subdirectory(nxdn_decoder)
 add_subdirectory(p25_decoder)
+add_subdirectory(easypal_decoder)
 
 add_library(digiham SHARED
     $<TARGET_OBJECTS:digiham_util>
@@ -44,8 +45,9 @@ add_library(digiham SHARED
     $<TARGET_OBJECTS:digiham_ysf_decoder>
     $<TARGET_OBJECTS:digiham_p25_decoder>
     $<TARGET_OBJECTS:digiham_pocsag>
+    $<TARGET_OBJECTS:digiham_easypal_decoder>
 )
-target_link_libraries(digiham Csdr::csdr++ CodecServer::codecserver ICU::uc)
+target_link_libraries(digiham Csdr::csdr++ CodecServer::codecserver ICU::uc ${FFTW3F_LIBRARIES})
 set_target_properties(digiham PROPERTIES VERSION ${PROJECT_VERSION})
 file(GLOB DIGIHAM_HEADERS "${PROJECT_SOURCE_DIR}/include/*.hpp" "${PROJECT_SOURCE_DIR}/include/*.h")
 set_target_properties(digiham PROPERTIES PUBLIC_HEADER "${DIGIHAM_HEADERS}")
