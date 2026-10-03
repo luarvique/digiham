@@ -91,37 +91,39 @@ void OfdmFrontEnd::buildPilots() {
 void OfdmFrontEnd::run() {
     for (;;) {
         if (state == ACQUIRE) {
-            if (signal.size() < 7600) return;
-            if (!acquire()) {
+            if (signal.size() < 7600) break;
+            if (acquire()) {
+                state = SYNC;
+            } else {
                 // Nothing here: slide the window forward
                 size_t drop = 3200;
                 signal.erase(signal.begin(), signal.begin() + drop);
                 signalBase += drop;
-                continue;
             }
-            state = SYNC;
         }
+
         if (state == SYNC) {
             const ModeInfo& mi = modes[mode];
-            long need = (position - signalBase) + (long)(EASYPAL_SYNC_SYMBOLS + 2) * (mi.tu + mi.tg) + mi.tu;
-            if ((long)signal.size() < need) return;
-            if (!synchronize()) {
-                state = ACQUIRE;
+            size_t need = position - signalBase + (EASYPAL_SYNC_SYMBOLS + 2) * (mi.tu + mi.tg) + mi.tu;
+            if (signal.size() < need) break;
+            if (synchronize()) {
+                startLive();
+                state = LIVE;
+            } else {
                 size_t drop = std::min<size_t>(3200, signal.size());
                 signal.erase(signal.begin(), signal.begin() + drop);
                 signalBase += drop;
-                continue;
+                state = ACQUIRE;
             }
-            startLive();
-            state = LIVE;
         }
+
         // LIVE
-        const ModeInfo& mi = modes[mode];
-        long need = (position - signalBase) + windowOffset + mi.tu + 8;
-        if ((long)signal.size() < need) return;
-        process();
-        if (state != LIVE) continue;
-        dropOld();
+        if (state == LIVE) {
+            size_t need = position - signalBase + windowOffset + modes[mode].tu + 8;
+            if (signal.size() < need) break;
+            process();
+            if (state == LIVE) dropOld();
+        }
     }
 }
 
