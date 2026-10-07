@@ -89,40 +89,50 @@ void OfdmFrontEnd::buildPilots() {
 }
 
 void OfdmFrontEnd::run() {
+    size_t need, drop;
+    const ModeInfo &mi;
+
     for (;;) {
-        if (state == ACQUIRE) {
-            if (signal.size() < 7600) break;
+        switch (state) {
+
+        case ACQUIRE:
+            if (signal.size() < 7600) return;
             if (acquire()) {
                 state = SYNC;
             } else {
                 // Nothing here: slide the window forward
-                size_t drop = 3200;
+                drop = 3200;
                 signal.erase(signal.begin(), signal.begin() + drop);
                 signalBase += drop;
             }
-        }
+            break;
 
-        if (state == SYNC) {
-            const ModeInfo& mi = modes[mode];
-            size_t need = position - signalBase + (EASYPAL_SYNC_SYMBOLS + 2) * (mi.tu + mi.tg) + mi.tu;
-            if (signal.size() < need) break;
+        case SYNC:
+            mi = modes[mode];
+            need = position - signalBase + (EASYPAL_SYNC_SYMBOLS + 2) * (mi.tu + mi.tg) + mi.tu;
+            if (signal.size() < need) return;
             if (synchronize()) {
                 startLive();
                 state = LIVE;
             } else {
-                size_t drop = std::min<size_t>(3200, signal.size());
+                drop = std::min<size_t>(3200, signal.size());
                 signal.erase(signal.begin(), signal.begin() + drop);
                 signalBase += drop;
                 state = ACQUIRE;
             }
-        }
+            break;
 
-        // LIVE
-        if (state == LIVE) {
-            size_t need = position - signalBase + windowOffset + modes[mode].tu + 8;
-            if (signal.size() < need) break;
+        case LIVE:
+            mi = modes[mode];
+            need = position - signalBase + windowOffset + mi.tu + 8;
+            if (signal.size() < need) return;
             process();
             if (state == LIVE) dropOld();
+            break;
+
+        default:
+            // invalid state
+            return;
         }
     }
 }
